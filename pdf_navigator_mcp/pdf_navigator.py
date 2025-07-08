@@ -5,6 +5,7 @@ import platform
 import subprocess
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple
+from urllib.parse import quote
 import fitz  # PyMuPDF
 from .config import Config
 
@@ -304,8 +305,10 @@ class PDFNavigator:
     
     def _open_with_skim(self, pdf_path: Path, page_number: int) -> None:
         """Open PDF with Skim (macOS)."""
-        url = f"skim://{pdf_path.resolve()}#{page_number}"
-        subprocess.run(["open", url], check=True)
+        abs_path = pdf_path.resolve()
+        skim_url = f"skim://{abs_path}#page={page_number}"
+        
+        subprocess.run(["open", skim_url], check=True)
     
     def _open_with_zathura(self, pdf_path: Path, page_number: int) -> None:
         """Open PDF with Zathura (Linux)."""

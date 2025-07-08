@@ -1,0 +1,72 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pdf-navigator-mcp"
+version = "0.1.0"
+description = "Comprehensive MCP server for PDF reading, navigation, and text search"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "Matsen Group", email = "ematsen@fredhutch.org"}
+]
+keywords = ["pdf", "navigation", "mcp", "claude", "text-search"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Text Processing :: Markup",
+    "Topic :: Utilities",
+]
+
+dependencies = [
+    "fastmcp>=0.1.0",
+    "pymupdf>=1.23.0",
+    "click>=8.0.0",
+    "pathlib2>=2.3.0; python_version<'3.4'",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=22.0.0",
+    "ruff>=0.1.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/matsengrp/pdf-navigator-mcp"
+Repository = "https://github.com/matsengrp/pdf-navigator-mcp"
+Issues = "https://github.com/matsengrp/pdf-navigator-mcp/issues"
+
+[project.scripts]
+pdf-navigator-mcp = "pdf_navigator_mcp.server:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["pdf_navigator_mcp*"]
+
+[tool.black]
+line-length = 88
+target-version = ['py38']
+
+[tool.ruff]
+line-length = 88
+target-version = "py38"
+select = ["E", "F", "W", "I", "N", "UP", "YTT", "S", "BLE", "B", "A", "C4", "T10", "ISC", "ICN", "G", "PIE", "T20", "PYI", "PT", "Q", "RSE", "RET", "SLF", "SIM", "TID", "ARG", "PTH", "ERA", "PD", "PGH", "PL", "TRY", "NPY", "RUF"]
+ignore = ["E501", "S101", "PLR0913", "PLR0912", "PLR0915"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+addopts = "--cov=pdf_navigator_mcp --cov-report=html --cov-report=term-missing"

@@ -1,7 +1,7 @@
 """MCP server for PDF navigation."""
 
 import sys
-from typing import Optional, Union
+from typing import Optional, Union, List
 from fastmcp import FastMCP
 from .pdf_navigator import PDFNavigator
 from .config import Config
@@ -183,6 +183,140 @@ def search_and_open(file_path: str, query: str, result_index: Union[int, str] = 
         return f"Search result {result_index}: {open_result}"
     except (IndexError, ValueError):
         return f"Error parsing search result {result_index}"
+
+
+# Research Analysis Prompts
+@mcp.prompt()
+def analyze_paper_structure(file_path: str) -> str:
+    """Guide analysis of a paper's structure and content"""
+    return f"""Please analyze the structure and content of {file_path}:
+
+1. First, get the PDF structure to understand sections
+2. Read the abstract (usually page 1-2)
+3. Identify the main contributions stated in the introduction
+4. Find the methodology section and note the approach
+5. Locate the results/evaluation section
+6. Summarize the conclusions
+
+Provide a structured summary with page references for each section."""
+
+
+@mcp.prompt()
+def find_definitions(file_path: str, terms: List[str]) -> str:
+    """Find where key terms are defined in a paper"""
+    terms_list = ', '.join(f'"{term}"' for term in terms)
+    return f"""Search for definitions of these terms in {file_path}: {terms_list}
+
+For each term:
+1. Search for the first occurrence
+2. Read the surrounding context (few sentences before/after)
+3. Determine if this is where the term is defined
+4. If not, search for phrases like "we define", "is defined as", "refers to"
+5. Extract the definition and note the page number"""
+
+
+# Literature Review Prompts
+@mcp.prompt()
+def extract_citations(file_path: str, topic: str) -> str:
+    """Extract relevant citations on a specific topic"""
+    return f"""Help me find citations related to '{topic}' in {file_path}:
+
+1. Search for mentions of '{topic}' throughout the paper
+2. For each mention, check if it's near a citation (look for [N] or (Author, Year) patterns)
+3. Read the sentence containing the citation
+4. Try to find the bibliography/references section
+5. Match the citation numbers/names to full references
+
+Return a list of relevant papers with:
+- How they relate to '{topic}'
+- Page where cited
+- Full citation if found"""
+
+
+@mcp.prompt()
+def compare_approaches(file_paths: List[str], aspect: str) -> str:
+    """Compare how multiple papers approach a specific aspect"""
+    files_formatted = '\n'.join(f'  - {fp}' for fp in file_paths)
+    return f"""Compare how these papers approach '{aspect}':
+{files_formatted}
+
+For each paper:
+1. Search for '{aspect}' and related terms
+2. Read the relevant sections
+3. Extract:
+   - Their specific approach/method
+   - Advantages they claim
+   - Limitations they acknowledge
+   - Page references
+
+Create a comparison table showing the differences."""
+
+
+# Study/Learning Prompts
+@mcp.prompt()
+def create_study_notes(file_path: str, focus_areas: Optional[List[str]] = None) -> str:
+    """Create comprehensive study notes from a paper"""
+    areas = f"Focus especially on: {', '.join(focus_areas)}" if focus_areas else ""
+    return f"""Create study notes for {file_path}. {areas}
+
+Structure the notes as:
+1. **Main Concept**: Read abstract and introduction, extract key idea
+2. **Background**: What prior knowledge is assumed? (check section 2 usually)
+3. **Core Contribution**: What's new? (usually in intro and conclusion)
+4. **Technical Details**: Key algorithms, formulas, or methods
+5. **Results**: Main findings and their significance
+6. **Open Questions**: What future work do they suggest?
+
+Include page numbers for each section."""
+
+
+@mcp.prompt()
+def explain_figure(file_path: str, figure_number: str) -> str:
+    """Explain a specific figure in detail"""
+    return f"""Explain Figure {figure_number} from {file_path}:
+
+1. Search for "Figure {figure_number}" to find the figure caption
+2. Read the caption and surrounding text
+3. Find where this figure is referenced in the main text
+4. Read those sections to understand context
+5. Explain:
+   - What the figure shows
+   - Why it's important to the paper
+   - Key takeaways
+   - How to interpret it"""
+
+
+# Writing Assistant Prompts
+@mcp.prompt()
+def find_examples(file_path: str, concept: str) -> str:
+    """Find concrete examples of a concept"""
+    return f"""Find concrete examples of '{concept}' in {file_path}:
+
+1. Search for '{concept}' throughout the document
+2. Look for phrases like "for example", "e.g.", "such as", "instance"
+3. Search for "Figure" or "Table" references related to {concept}
+4. Extract:
+   - Each example found
+   - Context around it
+   - Page number
+   - Whether it's a toy example or real-world application"""
+
+
+@mcp.prompt()
+def extract_evaluation_metrics(file_path: str) -> str:
+    """Extract evaluation methodology and metrics"""
+    return f"""Extract the evaluation methodology from {file_path}:
+
+1. Find the evaluation/experiments/results section
+2. Look for:
+   - Datasets used
+   - Metrics (accuracy, F1, BLEU, etc.)
+   - Baselines compared against
+   - Statistical significance tests
+3. Search for tables with results
+4. Note any ablation studies
+
+Organize by: Metrics -> Values -> Conditions -> Page refs"""
 
 
 def main():

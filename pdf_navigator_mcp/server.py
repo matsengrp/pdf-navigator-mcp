@@ -1,10 +1,44 @@
 """MCP server for PDF navigation."""
 
 import sys
-from typing import Optional
+from typing import Optional, Union
 from fastmcp import FastMCP
 from .pdf_navigator import PDFNavigator
 from .config import Config
+
+
+def safe_int(value: Union[int, str], param_name: str = "parameter") -> int:
+    """Safely convert a value to an integer with validation.
+    
+    Args:
+        value: The value to convert (int or str)
+        param_name: Name of the parameter for error messages
+        
+    Returns:
+        The integer value
+        
+    Raises:
+        ValueError: If the string cannot be converted to a valid integer
+    """
+    if isinstance(value, int):
+        return value
+    
+    if isinstance(value, str):
+        # Check if it's a valid integer string
+        value = value.strip()
+        if not value:
+            raise ValueError(f"{param_name} cannot be empty")
+        
+        # Check for valid integer format (optional minus sign + digits)
+        if not (value.isdigit() or (value.startswith('-') and value[1:].isdigit())):
+            raise ValueError(f"{param_name} must be a valid integer, got: '{value}'")
+        
+        try:
+            return int(value)
+        except ValueError:
+            raise ValueError(f"{param_name} must be a valid integer, got: '{value}'")
+    
+    raise ValueError(f"{param_name} must be an integer or string, got: {type(value)}")
 
 
 # Initialize MCP server
@@ -16,7 +50,7 @@ navigator = PDFNavigator(config)
 
 
 @mcp.tool()
-def open_pdf_page(file_path: str, page_number: int) -> str:
+def open_pdf_page(file_path: str, page_number: Union[int, str]) -> str:
     """Open a PDF file to a specific page.
     
     Args:
@@ -26,6 +60,9 @@ def open_pdf_page(file_path: str, page_number: int) -> str:
     Returns:
         Status message indicating success or error
     """
+    # Convert string parameter to integer if needed
+    page_number = safe_int(page_number, "page_number")
+    
     return navigator.open_pdf_page(file_path, page_number)
 
 
@@ -57,7 +94,7 @@ def get_pdf_info(file_path: str) -> str:
 
 
 @mcp.tool()
-def read_pdf_text(file_path: str, start_page: int = 1, end_page: Optional[int] = None) -> str:
+def read_pdf_text(file_path: str, start_page: Union[int, str] = 1, end_page: Optional[Union[int, str]] = None) -> str:
     """Read text content from PDF pages.
     
     Args:
@@ -68,11 +105,16 @@ def read_pdf_text(file_path: str, start_page: int = 1, end_page: Optional[int] =
     Returns:
         Extracted text content with page markers
     """
+    # Convert string parameters to integers if needed
+    start_page = safe_int(start_page, "start_page")
+    if end_page is not None:
+        end_page = safe_int(end_page, "end_page")
+    
     return navigator.read_pdf_text(file_path, start_page, end_page)
 
 
 @mcp.tool()
-def read_pdf_page(file_path: str, page_number: int) -> str:
+def read_pdf_page(file_path: str, page_number: Union[int, str]) -> str:
     """Read text content from a specific PDF page.
     
     Args:
@@ -82,6 +124,9 @@ def read_pdf_page(file_path: str, page_number: int) -> str:
     Returns:
         Text content of the specified page
     """
+    # Convert string parameter to integer if needed
+    page_number = safe_int(page_number, "page_number")
+    
     return navigator.read_pdf_page(file_path, page_number)
 
 
@@ -99,7 +144,7 @@ def get_pdf_structure(file_path: str) -> str:
 
 
 @mcp.tool()
-def search_and_open(file_path: str, query: str, result_index: int = 1) -> str:
+def search_and_open(file_path: str, query: str, result_index: Union[int, str] = 1) -> str:
     """Search for text in PDF and open to the specified result.
     
     Args:
@@ -110,6 +155,8 @@ def search_and_open(file_path: str, query: str, result_index: int = 1) -> str:
     Returns:
         Status message indicating success or error
     """
+    # Convert string parameter to integer if needed
+    result_index = safe_int(result_index, "result_index")
     # First search for the text
     search_result = navigator.search_pdf_text(file_path, query)
     

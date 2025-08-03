@@ -185,6 +185,56 @@ def search_and_open(file_path: str, query: str, result_index: Union[int, str] = 
         return f"Error parsing search result {result_index}"
 
 
+@mcp.tool()
+def extract_form_to_markdown(file_path: str, output_md_path: str) -> str:
+    """Extract form fields from PDF to a markdown file for editing.
+    
+    This function analyzes a PDF to identify form fields (both interactive 
+    and static) and creates a markdown file with placeholders for each field.
+    Users can then edit the markdown file to fill in the form data.
+    
+    Args:
+        file_path: Path to the PDF file containing the form
+        output_md_path: Path where the markdown file will be created
+        
+    Returns:
+        Status message indicating success or error with field count
+    """
+    return navigator.extract_form_to_markdown(file_path, output_md_path)
+
+
+@mcp.tool()
+def fill_form_from_markdown(pdf_path: str, markdown_path: str, output_pdf_path: str,
+                          distribute_text: bool = True, max_chars_per_field: int = 50,
+                          respect_line_breaks: bool = True) -> str:
+    """Fill PDF form using data from markdown file with enhanced text distribution.
+    
+    This function reads a markdown file containing form data (created by
+    extract_form_to_markdown) and uses it to fill the corresponding PDF form.
+    Works with both interactive forms (with actual form fields) and static
+    forms (creates text annotations).
+    
+    Enhanced features:
+    - Automatically detects multi-line form sections
+    - Distributes long text across multiple related fields
+    - Respects natural break points (sentences, commas, conjunctions)
+    - Prevents text cramming in single fields for better readability
+    
+    Args:
+        pdf_path: Path to the source PDF file
+        markdown_path: Path to the markdown file with filled form data
+        output_pdf_path: Path where the filled PDF will be saved
+        distribute_text: Enable/disable multi-line text distribution (default: True)
+        max_chars_per_field: Target character limit per field (default: 50)
+        respect_line_breaks: Honor newlines in input text (default: True)
+        
+    Returns:
+        Status message indicating success or error with filled field count
+    """
+    return navigator.fill_form_from_markdown(pdf_path, markdown_path, output_pdf_path,
+                                           distribute_text, max_chars_per_field, respect_line_breaks)
+
+
 # Research Analysis Prompts
 @mcp.prompt()
 def analyze_paper_structure(file_path: str) -> str:

@@ -8,6 +8,7 @@ A comprehensive Model Context Protocol (MCP) server for PDF reading, navigation,
 - **PDF structure analysis** - Extract table of contents and page summaries
 - **Text search with location** - Find text and jump to results
 - **Direct PDF navigation** - Open PDFs to specific pages
+- **PDF form filling** - Extract form fields to markdown, edit, and fill PDFs
 - **Cross-platform PDF viewers** - Supports Skim, Zathura, Evince, and more
 - **MCP integration** - Works with Claude Code and other MCP clients
 - **No dependency issues** - PyMuPDF isolated in MCP server environment
@@ -45,6 +46,8 @@ In Claude Code, you can:
 - **"Read pages 5-10 of paper.pdf"** → Extracts specific page range
 - **"Search for 'parameter efficiency' in paper.pdf"** → Finds text and locations
 - **"Open paper.pdf to page 5"** → Opens PDF viewer to specific page
+- **"Extract form fields from application.pdf"** → Creates markdown file with form fields
+- **"Fill the PDF form with my data"** → Fills PDF using edited markdown data
 
 ## MCP Tools
 
@@ -58,6 +61,95 @@ In Claude Code, you can:
 - `search_pdf_text(file_path, query)` - Search text and return locations
 - `open_pdf_page(file_path, page_number)` - Open PDF viewer to specific page
 - `search_and_open(file_path, query, result_index)` - Search and open to result
+
+### Form Filling Tools
+- `extract_form_to_markdown(file_path, output_md_path)` - Extract form fields to markdown with multi-line detection
+- `fill_form_from_markdown(pdf_path, markdown_path, output_pdf_path, distribute_text=True, max_chars_per_field=50, respect_line_breaks=True)` - Fill PDF from markdown with intelligent text distribution
+
+## PDF Form Filling Workflow
+
+The PDF form filling feature uses a markdown-based workflow:
+
+1. **Extract form fields** - Analyze the PDF and create a markdown file with all detected fields
+2. **Edit the markdown** - Fill in values using any text editor
+3. **Fill the PDF** - Apply the markdown data back to create a filled PDF
+
+### Example Workflow
+
+```bash
+# Step 1: Extract form fields to markdown
+# Creates a markdown file with placeholders for each field
+extract_form_to_markdown("application.pdf", "application_form.md")
+
+# Step 2: Edit application_form.md in your editor
+# Fill in values after each arrow (→)
+
+# Step 3: Fill the PDF with your data
+fill_form_from_markdown("application.pdf", "application_form.md", "application_filled.pdf")
+```
+
+### Markdown Format
+
+The extracted markdown looks like:
+
+```markdown
+# PDF Form: application.pdf
+Type: Interactive Form
+Generated: 2025-08-03
+
+## Form Fields
+
+### Page 1
+- Full Name → John Smith
+- Email → john@example.com
+- Phone → 555-0123
+- [ ] Subscribe to newsletter → true
+```
+
+### Form Types Supported
+
+- **Interactive Forms** - PDFs with actual form fields (fillable PDFs)
+- **Static Forms** - PDFs with underlines/boxes (creates moveable text annotations)
+
+### Enhanced Multi-line Form Detection
+
+The PDF Navigator now includes advanced multi-line form detection and intelligent text distribution:
+
+#### Features
+- **Multi-line Section Detection** - Automatically detects when multiple consecutive blank lines follow a section header (e.g., "I love..." followed by several underscores)
+- **Smart Text Distribution** - Distributes long text across multiple related fields using natural break points
+- **Natural Break Points** - Respects sentences, commas, conjunctions, and explicit line breaks
+- **Configurable Parameters** - Control text distribution behavior
+
+#### Text Distribution Strategies
+1. **Sentence splitting** - "I love reading. Playing games is fun." → separate fields
+2. **Comma/semicolon splitting** - "Reading books, playing games, going to parks" → separate fields  
+3. **Conjunction splitting** - "Reading and playing and going" → separate fields
+4. **Word boundary splitting** - Intelligent length-based splitting while preserving whole words
+
+#### Configuration Options
+- `distribute_text: bool` - Enable/disable multi-line text distribution (default: True)
+- `max_chars_per_field: int` - Target character limit per field (default: 50)
+- `respect_line_breaks: bool` - Honor newlines in input text (default: True)
+
+#### Example
+Instead of cramming "Reading books with my parents, doing puzzles and addition, going on trips, anything with my big sister" into one tiny field, it automatically distributes as:
+- Field 1: "Reading books with my parents"
+- Field 2: "doing puzzles and addition" 
+- Field 3: "going on trips"
+- Field 4: "anything with my big sister"
+
+#### Form Filling Best Practices
+
+For optimal text distribution in multi-line fields:
+```markdown
+- personal_interests_love_1 (I love...) → Reading books with my parents
+Doing puzzles and addition
+Going on trips
+Anything with my big sister
+```
+
+The newlines enable intelligent distribution across multiple PDF fields, preventing cramped text. Use the `extract_and_fill_form` and `format_multiline_form_data` MCP prompts for guided workflows.
 
 ## Supported PDF Readers
 

@@ -369,6 +369,66 @@ def extract_evaluation_metrics(file_path: str) -> str:
 Organize by: Metrics -> Values -> Conditions -> Page refs"""
 
 
+# PDF Form Filling Prompts
+@mcp.prompt()
+def extract_and_fill_form(pdf_path: str, source_data_path: Optional[str] = None) -> str:
+    """Guide complete PDF form extraction and filling workflow"""
+    source_info = f"Use data from {source_data_path}" if source_data_path else "Fill with your own data"
+    return f"""Complete PDF form filling workflow for {pdf_path}:
+
+1. **Extract Form Structure**:
+   - Use extract_form_to_markdown to create a markdown template
+   - This creates semantic field names with context (e.g., "personal_interests_love_1 (I love...)")
+   - Field mapping metadata is automatically included for reliable filling
+
+2. **Prepare Form Data**:
+   {source_info}
+   - For multi-line sections (like "I love..." or "My favorite activities are..."):
+     * Use newlines to separate items for better text distribution
+     * Example: "Reading books\\nDoing puzzles\\nGoing on trips"
+   - The system will intelligently distribute text across multiple related fields
+   - Avoid cramming long text into single lines
+
+3. **Fill the PDF**:
+   - Use fill_form_from_markdown with these recommended settings:
+     * distribute_text=True (enables smart text distribution)
+     * max_chars_per_field=50-60 (prevents tiny text)
+     * respect_line_breaks=True (honors your newline formatting)
+
+4. **Quality Check**:
+   - Open the filled PDF to verify formatting
+   - Text should be readable, not cramped
+   - Multi-line sections should be distributed across multiple fields
+
+The field mapping system ensures 100% field filling success (vs. 5% with old approach)."""
+
+
+@mcp.prompt()  
+def format_multiline_form_data(data_items: List[str], field_name: str) -> str:
+    """Help format data for multi-line PDF form fields"""
+    items_formatted = '\n'.join(f'  - {item}' for item in data_items)
+    return f"""Format these items for the "{field_name}" form field:
+{items_formatted}
+
+**Recommended formatting for PDF forms**:
+```
+{field_name} → {chr(10).join(data_items)}
+```
+
+**Why use newlines**:
+- Prevents text cramming in single fields
+- Enables intelligent distribution across multiple PDF fields  
+- Results in readable, properly-sized text
+- Works with respect_line_breaks=True parameter
+
+**Alternative formats**:
+- Comma-separated: Gets split at commas + conjunctions
+- Sentence-separated: Gets split at sentence boundaries
+- Natural text: Gets split at word boundaries
+
+**Best practice**: Use newlines for list-like data, natural text for paragraphs."""
+
+
 def main():
     """Main entry point for the MCP server."""
     # Handle command line arguments

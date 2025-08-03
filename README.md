@@ -139,6 +139,18 @@ Instead of cramming "Reading books with my parents, doing puzzles and addition, 
 - Field 3: "going on trips"
 - Field 4: "anything with my big sister"
 
+#### Form Filling Best Practices
+
+For optimal text distribution in multi-line fields:
+```markdown
+- personal_interests_love_1 (I love...) → Reading books with my parents
+Doing puzzles and addition
+Going on trips
+Anything with my big sister
+```
+
+The newlines enable intelligent distribution across multiple PDF fields, preventing cramped text. Use the `extract_and_fill_form` and `format_multiline_form_data` MCP prompts for guided workflows.
+
 ## Supported PDF Readers
 
 - **Skim** (macOS) - `skim://` URL scheme

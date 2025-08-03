@@ -297,9 +297,13 @@ Email: __________________
         mock_doc.__getitem__ = Mock(return_value=mock_page)
         mock_fitz.return_value = mock_doc
         
-        # Write markdown content
+        # Write markdown content with field mapping
         md_content = """# PDF Form: test.pdf
 Type: Interactive Form
+
+## Field Mapping
+<!-- full_name|full_name -->
+<!-- email|email -->
 
 ## Form Fields
 - full_name → John Smith
@@ -345,9 +349,13 @@ Type: Interactive Form
         mock_doc.__getitem__ = Mock(return_value=mock_page)
         mock_fitz.return_value = mock_doc
         
-        # Write markdown content
+        # Write markdown content with field mapping
         md_content = """# PDF Form: test.pdf
 Type: Static Form
+
+## Field Mapping
+<!-- Name|Name -->
+<!-- Email|Email -->
 
 ## Form Fields
 - Name → Jane Doe

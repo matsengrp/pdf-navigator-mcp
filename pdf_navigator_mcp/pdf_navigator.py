@@ -1195,6 +1195,10 @@ class PDFNavigator:
             form_data, field_mapping = self._parse_form_markdown(md_path, distribute_text, 
                                                 max_chars_per_field, respect_line_breaks)
             
+            # Ensure field mapping is available (should always be present in new format)
+            if not field_mapping:
+                return f"Error: No field mapping found in {markdown_path}. Please re-extract the form using extract_form_to_markdown to generate field mapping metadata."
+            
             # Open PDF
             doc = fitz.open(str(pdf_input))
             
@@ -1433,14 +1437,12 @@ class PDFNavigator:
         
         return parts
     
-    def _fill_interactive_form(self, doc, form_data: Dict[str, str], field_mapping: Dict[str, str] = None) -> int:
+    def _fill_interactive_form(self, doc, form_data: Dict[str, str], field_mapping: Dict[str, str]) -> int:
         """Fill interactive PDF form fields using field mapping."""
         filled_count = 0
         
         # Create reverse mapping from PDF field names to semantic names
-        reverse_mapping = {}
-        if field_mapping:
-            reverse_mapping = {pdf_name: semantic_name for semantic_name, pdf_name in field_mapping.items()}
+        reverse_mapping = {pdf_name: semantic_name for semantic_name, pdf_name in field_mapping.items()}
         
         for page_num in range(len(doc)):
             page = doc[page_num]
@@ -1451,34 +1453,18 @@ class PDFNavigator:
                 if not field_name:
                     continue
                 
-                value = None
-                
-                # Strategy 1: Use field mapping to find corresponding semantic field
+                # Use field mapping to find corresponding semantic field
                 if field_name in reverse_mapping:
                     semantic_name = reverse_mapping[field_name]
                     if semantic_name in form_data:
                         value = form_data[semantic_name]
-                
-                # Strategy 2: Try direct field name match (for backward compatibility)
-                if value is None and field_name in form_data:
-                    value = form_data[field_name]
-                
-                # Strategy 3: Try case-insensitive and partial matches as fallback
-                if value is None:
-                    for data_key, data_value in form_data.items():
-                        if (data_key.lower() in field_name.lower() or 
-                            field_name.lower() in data_key.lower()):
-                            value = data_value
-                            break
-                
-                if value is not None:
-                    widget.field_value = str(value)
-                    widget.update()
-                    filled_count += 1
+                        widget.field_value = str(value)
+                        widget.update()
+                        filled_count += 1
         
         return filled_count
     
-    def _fill_static_form(self, doc, form_data: Dict[str, str], field_mapping: Dict[str, str] = None) -> int:
+    def _fill_static_form(self, doc, form_data: Dict[str, str], field_mapping: Dict[str, str]) -> int:
         """Create text annotations for static PDF forms."""
         filled_count = 0
         

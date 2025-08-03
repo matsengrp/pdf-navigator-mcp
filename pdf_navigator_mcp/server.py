@@ -386,8 +386,10 @@ def extract_and_fill_form(pdf_path: str, source_data_path: Optional[str] = None)
    - For multi-line sections (like "I love..." or "My favorite activities are..."):
      * Use newlines to separate items for better text distribution
      * Example: "Reading books\\nDoing puzzles\\nGoing on trips"
-   - The system will intelligently distribute text across multiple related fields
-   - Avoid cramming long text into single lines
+   - The system will intelligently distribute text:
+     * If multiple fields exist: Distributes across them (e.g., Text1, Text2, Text3)
+     * If single field exists: Uses first item only (prevents micro text)
+   - Always use newlines instead of comma-separated lists
 
 3. **Fill the PDF**:
    - Use fill_form_from_markdown with these recommended settings:
@@ -416,9 +418,9 @@ def format_multiline_form_data(data_items: List[str], field_name: str) -> str:
 ```
 
 **Why use newlines**:
-- Prevents text cramming in single fields
-- Enables intelligent distribution across multiple PDF fields  
-- Results in readable, properly-sized text
+- **Single field**: Uses only first item, prevents micro text from cramming
+- **Multiple fields**: Distributes items across related fields (Text1, Text2, etc.)
+- Results in readable, properly-sized text in both cases
 - Works with respect_line_breaks=True parameter
 
 **Alternative formats**:

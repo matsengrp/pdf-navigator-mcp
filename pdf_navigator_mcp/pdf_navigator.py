@@ -1095,7 +1095,10 @@ class PDFNavigator:
             "## Instructions",
             "Fill in the values after each arrow (→). Leave blank if not applicable.",
             "For checkboxes, use 'true' or 'false' after the arrow.",
-            "Field names show both section context and prompt for easy verification.",
+            "",
+            "**IMPORTANT for Static Forms:** Only add fields that actually exist on the PDF form.",
+            "Do not add extra information that isn't requested on the form.",
+            "Review the PDF carefully to see what fields are present before filling this out.",
             "",
             "## Field Mapping",
             "<!-- This section maps semantic field names to PDF internal field names -->",
@@ -1195,10 +1198,6 @@ class PDFNavigator:
             form_data, field_mapping = self._parse_form_markdown(md_path, distribute_text, 
                                                 max_chars_per_field, respect_line_breaks)
             
-            # Ensure field mapping is available (should always be present in new format)
-            if not field_mapping:
-                return f"Error: No field mapping found in {markdown_path}. Please re-extract the form using extract_form_to_markdown to generate field mapping metadata."
-            
             # Open PDF
             doc = fitz.open(str(pdf_input))
             
@@ -1206,16 +1205,29 @@ class PDFNavigator:
             has_widgets = any(list(doc[i].widgets()) for i in range(len(doc)))
             
             if has_widgets:
+                # For interactive forms, field mapping is required
+                if not field_mapping:
+                    doc.close()
+                    return f"Error: No field mapping found in {markdown_path}. Please re-extract the form using extract_form_to_markdown to generate field mapping metadata."
+                
                 # Fill interactive form using field mapping
                 filled_count = self._fill_interactive_form(doc, form_data, field_mapping)
             else:
-                # Create annotations for static form using field mapping
+                # For static forms, we don't require field mapping - create annotations directly
+                if not form_data:
+                    doc.close()
+                    return f"Error: No form data found in {markdown_path}. Please add field data in the format 'field_name → value'."
+                
+                # Create annotations for static form
                 filled_count = self._fill_static_form(doc, form_data, field_mapping)
             
             # Save the filled PDF
             pdf_output.parent.mkdir(parents=True, exist_ok=True)
             doc.save(str(pdf_output))
             doc.close()
+            
+            if filled_count == 0:
+                return f"Warning: No fields were filled. Check that your markdown file contains valid field data in the format 'field_name → value'."
             
             return f"Successfully filled {filled_count} fields and saved to {pdf_output.name}"
             
@@ -1468,38 +1480,116 @@ class PDFNavigator:
         """Create text annotations for static PDF forms."""
         filled_count = 0
         
-        # Use the last page by default for annotations
-        if len(doc) > 0:
-            page = doc[-1]
+        if len(doc) == 0:
+            return 0
+        
+        # For static forms, distribute annotations across all pages intelligently
+        total_fields = len([v for v in form_data.values() if v and str(v).lower() not in ['false', '']])
+        if total_fields == 0:
+            return 0
+        
+        # Calculate annotations per page
+        fields_per_page = max(1, total_fields // len(doc))
+        current_page_idx = 0
+        current_field_count = 0
+        
+        # Starting position for annotations (top-left area)
+        base_y_position = 50  # Start near top
+        base_x_position = 50
+        line_height = 20
+        
+        for field_name, value in form_data.items():
+            if not value or str(value).lower() in ['false', '']:
+                continue
             
-            # Starting position for annotations
-            y_position = 100
-            x_position = 50
-            line_height = 20
+            # Get current page
+            page = doc[current_page_idx]
             
-            for field_name, value in form_data.items():
-                if value and str(value).lower() not in ['false', '']:
-                    # Create a text annotation
-                    rect = fitz.Rect(x_position, y_position, x_position + 200, y_position + line_height)
-                    
-                    # Create the annotation with the field value
-                    text_annot = page.add_freetext_annot(
-                        rect,
-                        f"{field_name}: {value}",
-                        fontsize=10,
-                        text_color=(0, 0, 0),
-                        fill_color=(1, 1, 1),
-                        border_color=(0.8, 0.8, 0.8)
+            # Calculate position for this field
+            field_in_page = current_field_count % fields_per_page
+            y_position = base_y_position + (field_in_page * (line_height + 5))
+            x_position = base_x_position
+            
+            # If we're running out of space on this page, move to next column
+            if y_position > 700:
+                x_position += 300
+                y_position = base_y_position + ((field_in_page - 15) * (line_height + 5))
+                
+                # If we're still running out of space, move to next page
+                if x_position > 500:
+                    current_page_idx = min(current_page_idx + 1, len(doc) - 1)
+                    current_field_count = 0
+                    y_position = base_y_position
+                    x_position = base_x_position
+                    page = doc[current_page_idx]
+            
+            # Clean up field name for display (remove technical parts)
+            display_name = self._clean_field_name_for_display(field_name)
+            
+            # Create annotation rectangle
+            rect = fitz.Rect(x_position, y_position, x_position + 280, y_position + line_height)
+            
+            # Create plain black freetext annotation with just the value
+            try:
+                text_annot = page.add_freetext_annot(
+                    rect,
+                    str(value),
+                    fontsize=10,
+                    text_color=(0, 0, 0)         # Black text, no background
+                )
+                # Don't set any info to avoid showing field names
+                text_annot.update()
+                
+                filled_count += 1
+                current_field_count += 1
+                
+            except Exception as e:
+                # If freetext annotation fails, try basic text annotation
+                try:
+                    # Create a basic text box annotation instead
+                    text_annot = page.add_widget(
+                        fitz.Widget.TYPE_TEXT,
+                        "text_field",
+                        rect
                     )
-                    text_annot.set_info(title="Form Field", content=field_name)
+                    text_annot.field_value = str(value)
                     text_annot.update()
-                    
                     filled_count += 1
-                    y_position += line_height + 5
-                    
-                    # Move to next column if needed
-                    if y_position > 700:
-                        y_position = 100
-                        x_position += 250
+                    current_field_count += 1
+                except Exception as e2:
+                    # Final fallback - simple text annotation
+                    try:
+                        annot = page.add_text_annot(fitz.Point(x_position, y_position), str(value))
+                        annot.update()
+                        filled_count += 1
+                        current_field_count += 1
+                    except Exception as e3:
+                        print(f"Warning: Could not create any annotation for {field_name}: {e}, {e2}, {e3}")
+                        continue
         
         return filled_count
+    
+    def _clean_field_name_for_display(self, field_name: str) -> str:
+        """Clean up field names to be more user-friendly for display."""
+        # Remove technical prefixes and suffixes
+        clean_name = field_name
+        
+        # Remove section prefixes like "my_strengths_"
+        clean_name = re.sub(r'^[a-z_]+_([a-z_]+)(?:_\d+)?\s*\((.+?)\)', r'\2', clean_name, flags=re.IGNORECASE)
+        
+        # If that didn't match, try simpler pattern
+        if clean_name == field_name:
+            clean_name = re.sub(r'^[a-z_]+_', '', clean_name, flags=re.IGNORECASE)
+        
+        # Remove trailing parenthetical parts like "(I am...)"
+        clean_name = re.sub(r'\s*\([^)]*\.\.\.\)\s*$', '', clean_name)
+        
+        # Convert underscores to spaces and title case
+        clean_name = clean_name.replace('_', ' ').title()
+        
+        # Handle some special cases
+        clean_name = clean_name.replace('Participant Name', 'Name')
+        clean_name = clean_name.replace('Participant Age', 'Age')
+        clean_name = clean_name.replace('Emergency Contact Name', 'Emergency Contact')
+        
+        return clean_name

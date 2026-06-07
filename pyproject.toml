@@ -7,7 +7,7 @@ name = "pdf-navigator-mcp"
 version = "0.1.0"
 description = "Comprehensive MCP server for PDF reading, navigation, and text search"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 license = {text = "MIT"}
 authors = [
     {name = "Matsen Group", email = "ematsen@fredhutch.org"}
@@ -19,21 +19,18 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: Text Processing :: Markup",
     "Topic :: Utilities",
 ]
 
 dependencies = [
-    "fastmcp>=0.1.0",
+    "fastmcp>=2.0.0",
     "pymupdf>=1.23.0",
-    "click>=8.0.0",
-    "pathlib2>=2.3.0; python_version<'3.4'",
 ]
 
 [project.optional-dependencies]
@@ -58,11 +55,11 @@ include = ["pdf_navigator_mcp*"]
 
 [tool.black]
 line-length = 88
-target-version = ['py38']
+target-version = ['py310']
 
 [tool.ruff]
 line-length = 88
-target-version = "py38"
+target-version = "py310"
 select = ["E", "F", "W", "I", "N", "UP", "YTT", "S", "BLE", "B", "A", "C4", "T10", "ISC", "ICN", "G", "PIE", "T20", "PYI", "PT", "Q", "RSE", "RET", "SLF", "SIM", "TID", "ARG", "PTH", "ERA", "PD", "PGH", "PL", "TRY", "NPY", "RUF"]
 ignore = ["E501", "S101", "PLR0913", "PLR0912", "PLR0915"]
 

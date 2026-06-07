@@ -16,7 +16,7 @@ Or use the virtual environment's executables directly:
 
 ## Project Structure
 
-This is a Model Context Protocol (MCP) server for PDF navigation and form filling.
+This is a Model Context Protocol (MCP) server for PDF reading and navigation.
 
 Key files:
 - `pdf_navigator_mcp/pdf_navigator.py` - Core PDF functionality
@@ -36,11 +36,3 @@ Run tests using:
 2. Add tests for new functionality
 3. Use type hints for better code clarity
 4. Follow the existing code style
-
-## Form Filling Feature
-
-The form filling feature works in two steps:
-1. Extract form fields to markdown: `extract_form_to_markdown()`
-2. Fill PDF from edited markdown: `fill_form_from_markdown()`
-
-This supports both interactive PDF forms and static forms.

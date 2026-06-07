@@ -144,3 +144,6 @@ Thumbs.db
 test_files/
 
 .claude
+
+# Draft issue files (never committed)
+ISSUE-*.md
